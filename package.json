@@ -1,0 +1,53 @@
+{
+  "name": "screenshot-tool",
+  "version": "1.0.0",
+  "main": "screenshot-tool.js",
+  "scripts": {
+    "start": "electron .",
+    "start:headless": "xvfb-run -a electron .",
+    "clean": "rm -rf node_modules dist out release build",
+    "package": "electron-builder --dir",
+    "dist": "electron-builder"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ekorian/screenshot-tool.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/ekorian/screenshot-tool/issues"
+  },
+  "homepage": "https://github.com/ekorian/screenshot-tool#readme",
+  "description": "Electron + Puppeteer tool to capture specific DOM elements as images",
+  "dependencies": {
+    "electron": "^37.2.6",
+    "puppeteer": "^24.16.0"
+  },
+  "devDependencies": {
+    "electron-builder": "^24.13.3"
+  },
+  "build": {
+    "appId": "com.example.screenshottool",
+    "productName": "Div Screenshot Tool Pro",
+    "files": [
+      "screenshot-tool.js"
+    ],
+    "asar": true,
+    "asarUnpack": [
+      "**/node_modules/puppeteer/**"
+    ],
+    "mac": {
+      "category": "public.app-category.utilities",
+      "target": ["dmg", "zip"]
+    },
+    "win": {
+      "target": ["nsis", "zip"]
+    },
+    "linux": {
+      "target": ["AppImage", "deb", "zip"],
+      "category": "Utility"
+    }
+  }
+}
