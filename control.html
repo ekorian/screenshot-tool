@@ -1,0 +1,598 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1.0" />
+  <title>Div Screenshot Tool Pro</title>
+  <style>
+    * {margin:0;padding:0;box-sizing:border-box}
+    body {
+      font-family: -apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Arial,sans-serif;
+      background: linear-gradient(135deg,#667eea 0%,#764ba2 100%);
+      color:#fff; padding:18px; min-height:100vh; overflow:auto;
+    }
+    .container {max-width:100%; display:flex; flex-direction:column; gap:14px; max-height:calc(100vh - 36px); overflow-y:auto}
+    h1 {text-align:center; font-size:18px; font-weight:800; letter-spacing:.2px}
+    .section {
+      background: rgba(255,255,255,.15);
+      border:1px solid rgba(255,255,255,.12);
+      border-radius:14px; padding:14px; backdrop-filter: blur(12px);
+    }
+    .section h3 {font-size:14px; margin-bottom:10px; display:flex; align-items:center; gap:8px}
+    .topbar {display:flex; align-items:center; justify-content:space-between; gap:10px}
+    .active-mode {
+      font-size:12px; background:rgba(0,0,0,.35); padding:6px 10px; border-radius:10px; border:1px solid rgba(255,255,255,.1)
+    }
+    input[type="url"] {
+      width:100%; padding:12px; border:none; border-radius:10px;
+      background: rgba(255,255,255,.92); color:#222; font-size:14px; outline:none;
+    }
+    button {
+      width:100%; border:none; cursor:pointer; font-weight:700; color:#fff;
+      padding:12px 16px; border-radius:12px; transition: transform .15s ease, box-shadow .2s ease;
+      box-shadow: 0 6px 18px rgba(0,0,0,.22);
+    }
+    button:hover {transform: translateY(-1px)}
+    button:disabled {opacity:.55; cursor:not-allowed; transform:none}
+    .primary {background: linear-gradient(135deg,#2196F3,#1976d2)}
+    .success {background: linear-gradient(135deg,#4CAF50,#2e7d32)}
+    .warning {background: linear-gradient(135deg,#FF9800,#ef6c00)}
+    .danger  {background: linear-gradient(135deg,#f44336,#d32f2f)}
+    .muted   {background: linear-gradient(135deg,#7c8aa6,#62718c)}
+    .row {display:grid; grid-template-columns: 1fr 1fr; gap:10px}
+    .row-3 {display:grid; grid-template-columns: 1fr 1fr 1fr; gap:10px}
+
+    .mode-grid {display:grid; grid-template-columns: 1fr; gap:10px; margin-top:6px;}
+    .mode-option {display:flex; align-items:flex-start; gap:12px; padding:14px; border-radius:14px;
+      background: rgba(0,0,0,.28); border:2px solid transparent; cursor:pointer;
+      transition: transform .12s ease, border-color .15s ease, background .15s ease;}
+    .mode-option:hover {transform: translateY(-1px); border-color: rgba(255,255,255,.25)}
+    .mode-option.selected {border-color:#00ff88; background: rgba(0,255,136,.18)}
+    .mode-icon {font-size:22px; line-height:1}
+    .mode-text {display:flex; flex-direction:column; gap:4px}
+    .mode-title {font-size:14px; font-weight:800}
+    .mode-desc  {font-size:12px; opacity:.9}
+    .kbd {font-family: ui-monospace,SFMono-Regular,Menlo,Consolas,monospace; font-size:11px; background: rgba(255,255,255,.16); border:1px solid rgba(255,255,255,.22); padding:2px 6px; border-radius:6px;}
+
+    .status {margin-top:10px; font-size:12px; padding:10px; border-radius:10px; background: rgba(0,0,0,.3); border:1px solid rgba(255,255,255,.12); min-height:20px; white-space:pre-wrap;}
+    .status.success {background: rgba(76,175,80,.28); border-color:#4caf50}
+    .status.error   {background: rgba(244,67,54,.28); border-color:#f44336}
+    label.opt {display:flex; align-items:center; gap:8px}
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="topbar">
+      <h1>🎯 Div Screenshot Tool Pro</h1>
+      <div id="activeMode" class="active-mode">Mode: <strong>Isolation intelligente</strong> &nbsp;(<span class="kbd">1</span>/<span class="kbd">2</span>/<span class="kbd">3</span>)</div>
+    </div>
+
+    <div class="section" id="modesSection">
+      <h3>⚙️ Mode de capture</h3>
+      <div class="mode-grid" id="modeGrid">
+        <div class="mode-option selected" data-mode="smart-isolation">
+          <div class="mode-icon">🎯</div>
+          <div class="mode-text">
+            <div class="mode-title">Isolation intelligente <span class="kbd">1</span></div>
+            <div class="mode-desc">Garde l’élément + ses enfants, masque tout le reste</div>
+          </div>
+        </div>
+        <div class="mode-option" data-mode="background-only">
+          <div class="mode-icon">🎨</div>
+          <div class="mode-text">
+            <div class="mode-title">Arrière-plans transparents <span class="kbd">2</span></div>
+            <div class="mode-desc">Supprime les fonds, conserve tout le contenu</div>
+          </div>
+        </div>
+        <div class="mode-option" data-mode="siblings-removal">
+          <div class="mode-icon">👥</div>
+          <div class="mode-text">
+            <div class="mode-title">Masquer les frères <span class="kbd">3</span></div>
+            <div class="mode-desc">Garde l’élément, masque ses éléments frères</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="section">
+      <h3>🌐 Navigation</h3>
+      <input type="url" id="urlInput" placeholder="https://exemple.com" />
+      <div class="row">
+        <button id="navigateBtn" class="muted">📍 Naviguer vers la page</button>
+        <button id="toggleSelectionBtn" class="success" disabled>▶️ Activer la sélection</button>
+      </div>
+      <div id="navigationStatus" class="status">En attente d'une URL…</div>
+      <div id="selectionStatus" class="status" style="margin-top:8px">Naviguer vers une page d’abord</div>
+    </div>
+
+    <div class="section">
+      <h3>🧭 Navigation DOM</h3>
+      <div class="row">
+        <button id="domParentBtn" class="muted">⬆️ Parent</button>
+        <button id="domChildBtn" class="muted">⬇️ Enfant</button>
+      </div>
+      <div class="row" style="margin-top:8px">
+        <button id="domPrevBtn" class="muted">⬅️ Précédent</button>
+        <button id="domNextBtn" class="muted">➡️ Suivant</button>
+      </div>
+      <div class="status" style="margin-top:10px">
+        Raccourcis : ↑ parent, ↓ enfant, ← précédent, → suivant, + parent, - enfant
+      </div>
+    </div>
+
+    <div class="section">
+      <h3>🎬 Actions</h3>
+      <div class="row">
+        <button id="previewBtn" class="warning" disabled>👁️ Aperçu (3s)</button>
+        <button id="captureBtn" class="primary" disabled>📸 Capturer HD</button>
+      </div>
+      <div class="row-3" style="margin-top:10px">
+        <label class="opt"><input type="checkbox" id="removeSelfBg"> Fond de l’élément → transparent</label>
+        <label class="opt"><input type="checkbox" id="removeOutsideImages" checked> Masquer images autour</label>
+        <label class="opt"><input type="checkbox" id="removeInsideImages"> Masquer images dans l’élément</label>
+      </div>
+      <button id="resetBtn" class="danger" style="margin-top:10px" disabled>🔄 Réinitialiser</button>
+      <div id="actionStatus" class="status">Sélectionner un élément d’abord</div>
+    </div>
+
+    <!-- 🧪 Qualité & Export -->
+    <div class="section">
+      <h3>🧪 Qualité & Export</h3>
+      <div class="row" style="align-items:center">
+        <div>
+          <label class="opt" style="gap:12px">
+            <span>Netteté (DPR)&nbsp;:</span>
+            <input type="range" id="dprSlider" min="1" max="6" step="1" value="2" style="width:180px">
+            <strong id="dprValue">2×</strong>
+          </label>
+        </div>
+        <label class="opt" title="Génère un SVG via foreignObject (peut ne pas refléter tous les styles)">
+          <input type="checkbox" id="exportSvg">
+          Exporter en SVG (expérimental)
+        </label>
+      </div>
+      <div class="status" style="margin-top:10px">
+        Astuce : un DPR plus élevé = image plus nette mais fichier plus lourd.
+      </div>
+    </div>
+  </div>
+<style>
+  .swatch { width: 26px; height: 26px; border-radius: 8px; border:1px solid rgba(255,255,255,.25); cursor:pointer }
+  .swatch-grid { display:flex; gap:8px; align-items:center; flex-wrap:wrap }
+  .input-color { width: 120px; height: 34px; border:none; border-radius:8px; padding:0 6px }
+  .label-mini { font-size:12px; opacity:.85 }
+  .modal-backdrop{position:fixed;inset:0;background:rgba(0,0,0,.55);display:none;z-index:9998}
+  .modal{position:fixed;inset:0;display:none;place-items:center;z-index:9999}
+  .modal.active,.modal-backdrop.active{display:grid}
+  .modal-card{width:min(860px,95vw);max-height:min(85vh,900px);overflow:hidden;border-radius:16px;background:#0f172a;color:#fff;border:1px solid rgba(255,255,255,.15);box-shadow:0 20px 60px rgba(0,0,0,.5)}
+  .modal-header{display:flex;align-items:center;justify-content:space-between;padding:14px 16px;background:rgba(255,255,255,.06);border-bottom:1px solid rgba(255,255,255,.1)}
+  .modal-title{font-weight:800}
+.modal-body {
+  display: grid;
+  grid-template-rows: auto 1fr auto;
+  gap: 12px;
+  padding: 14px 16px;
+  height: 100%; /* important */
+}
+  .toolbar{display:flex;gap:8px;flex-wrap:wrap}
+  .toolbar input{flex:1;padding:10px;border-radius:10px;border:none}
+  .chips{display:flex;gap:8px;flex-wrap:wrap}
+  .chip{padding:6px 10px;border-radius:999px;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.15);cursor:pointer}
+.grid {
+  overflow: auto;
+  border: 1px solid rgba(255,255,255,.12);
+  border-radius: 12px;
+  max-height: 50vh; /* ou plus petit selon la taille écran */
+}
+  .modal-card {
+  width: min(860px, 95vw);
+  max-height: min(85vh, 900px);
+  overflow-y: auto; /* <-- AJOUT ICI */
+  border-radius: 16px;
+  background: #0f172a;
+  color: #fff;
+  border: 1px solid rgba(255,255,255,.15);
+  box-shadow: 0 20px 60px rgba(0,0,0,.5);
+}
+  .row-style{display:grid;grid-template-columns: 220px 1fr auto;gap:8px;align-items:center;padding:8px 10px;border-bottom:1px dashed rgba(255,255,255,.07)}
+  .row-style:last-child{border-bottom:none}
+  .row-style input[type="checkbox"]{transform:translateY(1px)}
+  .modal-footer{display:flex;justify-content:flex-end;gap:8px}
+</style>
+
+<div id="styleModalBackdrop" class="modal-backdrop"></div>
+<div id="styleModal" class="modal" role="dialog" aria-modal="true" aria-label="Mode Capture Personnalisé">
+  <div class="modal-card">
+    <div class="modal-header">
+      <div class="modal-title">🧰 Mode de capture personnalisé</div>
+      <button id="styleModalClose" class="danger" style="width:auto;padding:8px 12px">Fermer</button>
+    </div>
+    <div class="modal-body">
+      <div class="toolbar">
+        <input id="styleSearch" type="search" placeholder="Rechercher un style (ex: background, box-shadow, transform)…" />
+        <div class="chips">
+          <button id="btnCheckAll"   class="muted chip">Tout cocher</button>
+          <button id="btnUncheckAll" class="muted chip">Tout décocher</button>
+          <button id="btnEssentials" class="chip success">Essentiels</button>
+        </div>
+      </div>
+      <div class="chips" style="align-items:center; justify-content:space-between">
+  <div class="label-mini">Fond de prévisualisation :</div>
+  <div class="swatch-grid">
+    <button class="chip" id="bgTransparent">Transparent</button>
+    <div id="bgLight"  class="swatch" title="#ffffff" style="background:#ffffff"></div>
+    <div id="bgDark"   class="swatch" title="#000000" style="background:#000000"></div>
+    <div id="bgGrid"   class="swatch" title="Damier" style="background:
+      conic-gradient(#ddd 25%, #fff 0 50%, #ddd 0 75%, #fff 0) 0/16px 16px;"></div>
+    <input id="bgPicker" class="input-color" type="color" value="#0f172a" />
+  </div>
+</div>
+      <div id="styleList" class="grid" style="min-height:260px"></div>
+      <div class="modal-footer">
+        <button id="styleModalCancel" class="muted">Annuler</button>
+        <button id="styleModalConfirm" class="primary">📸 Capturer avec ces styles</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+  <script>
+    const { ipcRenderer } = require('electron');
+    const urlInput = document.getElementById('urlInput');
+    const navigateBtn = document.getElementById('navigateBtn');
+    const toggleSelectionBtn = document.getElementById('toggleSelectionBtn');
+    const previewBtn = document.getElementById('previewBtn');
+    const captureBtn = document.getElementById('captureBtn');
+    const resetBtn = document.getElementById('resetBtn');
+    const navigationStatus = document.getElementById('navigationStatus');
+    const selectionStatus = document.getElementById('selectionStatus');
+    const actionStatus = document.getElementById('actionStatus');
+    const activeModeLabel = document.getElementById('activeMode');
+    const domParentBtn = document.getElementById('domParentBtn');
+    const domChildBtn  = document.getElementById('domChildBtn');
+    const domPrevBtn   = document.getElementById('domPrevBtn');
+    const domNextBtn   = document.getElementById('domNextBtn');
+
+    const removeSelfBg = document.getElementById('removeSelfBg');
+    const removeOutsideImages = document.getElementById('removeOutsideImages');
+    const removeInsideImages = document.getElementById('removeInsideImages');
+
+    // Nouveaux contrôles
+    const dprSlider = document.getElementById('dprSlider');
+    const dprValue  = document.getElementById('dprValue');
+    const btnEss = document.getElementById('btnEssentials');
+const ESSENTIALS = [
+  'background','background-image','background-color','backdrop-filter',
+  'box-shadow','border','border-radius','outline',
+  'opacity','mix-blend-mode','filter','transform','transform-origin',
+  'color','font','font-size','font-weight','text-shadow','line-height',
+  'width','height','padding','margin','display','position','z-index',
+  'overflow','overflow-x','overflow-y'
+];
+// utilitaires modal (place-les avant les addEventListener)
+const modal      = document.getElementById('styleModal');
+const backdrop   = document.getElementById('styleModalBackdrop');
+const styleList  = document.getElementById('styleList');
+const styleSearch= document.getElementById('styleSearch');
+const btnAll     = document.getElementById('btnCheckAll');
+const btnNone    = document.getElementById('btnUncheckAll');
+const btnClose   = document.getElementById('styleModalClose');
+const btnCancel  = document.getElementById('styleModalCancel');
+const btnConfirm = document.getElementById('styleModalConfirm');
+// --- Contrôles fond preview ---
+const bgTransparentBtn = document.getElementById('bgTransparent');
+const bgLightSwatch    = document.getElementById('bgLight');
+const bgDarkSwatch     = document.getElementById('bgDark');
+const bgGridSwatch     = document.getElementById('bgGrid');
+const bgPicker         = document.getElementById('bgPicker');
+
+// Helper pour appliquer le fond côté page
+async function setPreviewBg(cssBackground) {
+  await ipcRenderer.invoke('set-preview-bg', { background: cssBackground || 'transparent' });
+}
+
+// Presets
+bgTransparentBtn?.addEventListener('click', (e)=>{ e.preventDefault(); setPreviewBg('transparent'); });
+bgLightSwatch?.addEventListener('click',   ()=> setPreviewBg('#ffffff'));
+bgDarkSwatch?.addEventListener('click',    ()=> setPreviewBg('#000000'));
+bgGridSwatch?.addEventListener('click',    ()=> setPreviewBg('conic-gradient(#ddd 25%, #fff 0 50%, #ddd 0 75%, #fff 0) 0/16px 16px'));
+
+// Color picker
+bgPicker?.addEventListener('input', ()=> setPreviewBg(bgPicker.value));
+
+
+btnCancel.onclick = async () => {
+  await ipcRenderer.invoke('live-reset-styles');
+  await ipcRenderer.invoke('remove-isolation');
+  await setPreviewBg('transparent'); // remet le fond par défaut
+  closeModal();
+  updateStatus(actionStatus, 'Prévisualisation annulée, tout est restauré.', 'success');
+};
+btnConfirm.addEventListener('click', async () => {
+const selected = Array.from(selectionState.entries())
+  .filter(([, keep]) => keep)
+  .map(([prop]) => prop);
+  closeModal();
+  updateStatus(actionStatus, 'Capture haute définition en cours… 📸', '');
+
+  // ✅ On réinitialise le live preview
+  await ipcRenderer.invoke('live-reset-styles');
+
+  // ✅ On retire le masque d'isolement et le fond de prévisualisation
+  await ipcRenderer.invoke('remove-isolation');
+  await setPreviewBg('transparent');
+
+  // 📸 On lance la capture finale
+  const res = await ipcRenderer.invoke('capture-element', {
+    removeSelfBg: !!removeSelfBg.checked,
+    removeOutsideImages: !!removeOutsideImages.checked,
+    removeInsideImages: !!removeInsideImages.checked,
+    dpr: Math.max(1, Math.min(6, parseInt(dprSlider.value, 10) || 2)),
+    selectedStyles: selected
+  });
+
+  if (res && res.success) {
+    const files = Array.isArray(res.filenames) ? res.filenames.join(', ') : res.filename;
+    updateStatus(actionStatus, "✅ Fichier(s) : " + files, "success");
+  } else {
+    updateStatus(actionStatus, '❌ Erreur: ' + (res?.error || 'inconnue'), 'error');
+  }
+});
+
+btnEss?.addEventListener('click', (e)=>{
+  e.preventDefault();
+  styleList.querySelectorAll('input[type=checkbox]').forEach(cb=>{
+    cb.checked = ESSENTIALS.includes(cb.dataset.prop);
+  });
+});
+
+    let isSelectionActive = false;
+    let hasSelectedElement = false;
+
+    const modeTitles = {
+      'smart-isolation': 'Isolation intelligente',
+      'background-only': 'Arrière-plans transparents',
+      'siblings-removal': 'Masquer les frères'
+    };
+    function updateActiveModeLabel(mode) {
+      activeModeLabel.innerHTML = 'Mode: <strong>' + (modeTitles[mode] || '—') + '</strong> &nbsp;(<span class="kbd">1</span>/<span class="kbd">2</span>/<span class="kbd">3</span>)';
+    }
+    function selectModeByIndex(idx) {
+      const options = Array.from(document.querySelectorAll('.mode-option'));
+      if (!options[idx]) return;
+      options.forEach(o => o.classList.remove('selected'));
+      options[idx].classList.add('selected');
+      options[idx].scrollIntoView({block:'nearest', behavior:'smooth'});
+      const mode = options[idx].getAttribute('data-mode');
+      updateActiveModeLabel(mode);
+    }
+    document.querySelectorAll('.mode-option').forEach((opt, idx) => {
+      opt.addEventListener('click', () => selectModeByIndex(idx));
+    });
+    document.addEventListener('keydown', (e) => {
+      if (['INPUT','TEXTAREA'].includes(e.target.tagName)) return;
+      if (e.key === '1') selectModeByIndex(0);
+      if (e.key === '2') selectModeByIndex(1);
+      if (e.key === '3') selectModeByIndex(2);
+    });
+    updateActiveModeLabel('smart-isolation');
+    function getSelectedMode() {
+      const el = document.querySelector('.mode-option.selected');
+      return el ? el.getAttribute('data-mode') : 'smart-isolation';
+    }
+    function updateStatus(el, msg, type) { el.textContent = msg; el.className = 'status' + (type ? ' ' + type : ''); }
+
+    // Binding DPR label
+    dprSlider.addEventListener('input', () => {
+      dprValue.textContent = dprSlider.value + '×';
+    });
+
+    navigateBtn.addEventListener('click', async () => {
+      const url = urlInput.value.trim();
+      if (!url) { updateStatus(navigationStatus, 'Veuillez entrer une URL', 'error'); return; }
+      navigateBtn.disabled = true;
+      updateStatus(navigationStatus, 'Navigation en cours…', '');
+      const res = await ipcRenderer.invoke('navigate-to-url', url);
+      if (res && res.success) {
+        updateStatus(navigationStatus, 'Page chargée avec succès ! 🚀', 'success');
+        toggleSelectionBtn.disabled = false;
+        updateStatus(selectionStatus, 'Prêt à sélectionner des éléments', 'success');
+      } else {
+        updateStatus(navigationStatus, 'Erreur: ' + (res && res.error ? res.error : 'inconnue'), 'error');
+      }
+      navigateBtn.disabled = false;
+    });
+    urlInput.addEventListener('keypress', (e)=>{ if(e.key==='Enter') navigateBtn.click(); });
+
+    toggleSelectionBtn.addEventListener('click', async () => {
+      isSelectionActive = !isSelectionActive;
+      await ipcRenderer.invoke('toggle-selection', isSelectionActive);
+      toggleSelectionBtn.textContent = isSelectionActive ? '⏹️ Désactiver' : '▶️ Activer la sélection';
+      toggleSelectionBtn.className = isSelectionActive ? 'danger' : 'success';
+      updateStatus(selectionStatus, isSelectionActive ? 'Mode sélection activé — cliquez un élément' : 'Mode sélection désactivé', isSelectionActive ? '' : 'success');
+
+      if (isSelectionActive) {
+        const timer = setInterval(async () => {
+          const el = await ipcRenderer.invoke('get-selected-element');
+          if (el && !hasSelectedElement) {
+            hasSelectedElement = true;
+            const cornerInfo = el.hasRoundedCorners ? ' 🔄 Coins arrondis détectés' : '';
+            updateStatus(selectionStatus, `Élément sélectionné: ${el.tagName}${el.id ? '#' + el.id : ''} (${el.width}x${el.height})${cornerInfo}`, 'success');
+            previewBtn.disabled = false; captureBtn.disabled = false; resetBtn.disabled = false;
+            updateStatus(actionStatus, 'Prêt pour la capture haute qualité ! ✨', 'success');
+            clearInterval(timer);
+          }
+        }, 800);
+        setTimeout(()=>clearInterval(timer), 60000);
+      } else {
+        hasSelectedElement = false;
+        previewBtn.disabled = true; captureBtn.disabled = true; resetBtn.disabled = true;
+        updateStatus(actionStatus, 'Sélectionner un élément d’abord', '');
+      }
+    });
+
+    previewBtn.addEventListener('click', async () => {
+      const options = { mode: getSelectedMode(), isPreview: true };
+      updateStatus(actionStatus, 'Application de l’aperçu…', '');
+      await ipcRenderer.invoke('apply-background-changes', options);
+      updateStatus(actionStatus, 'Aperçu appliqué pour 3 secondes ⏱️', 'success');
+    });
+
+
+function openModal(){ modal.classList.add('active'); backdrop.classList.add('active'); }
+function closeModal(){ modal.classList.remove('active'); backdrop.classList.remove('active'); }
+btnClose.onclick = btnCancel.onclick; // ferme + restaure comme "Annuler"
+
+// NEW: rendu de la liste (tout coché par défaut)
+// — Etat global de sélection des styles
+let lastStyles = [];                 // [{prop, value}]
+let selectionState = new Map();      // prop -> boolean (true = garder)
+let currentRenderedProps = [];       // props actuellement affichées (filtrées)
+function renderStyles(filterText='') {
+  const frag = document.createDocumentFragment();
+  const q = filterText.trim().toLowerCase();
+  const list = q
+    ? lastStyles.filter(s => s.prop.toLowerCase().includes(q) || s.value.toLowerCase().includes(q))
+    : lastStyles;
+
+  currentRenderedProps = list.map(s => s.prop);
+
+  list.forEach(({prop, value}) => {
+    const row = document.createElement('div');
+    row.className='row-style';
+
+    const left = document.createElement('div');
+    left.textContent = prop;
+
+    const mid  = document.createElement('div'); 
+    mid.style.opacity=.9; 
+    mid.style.fontFamily='ui-monospace,monospace'; 
+    mid.textContent = value;
+
+    const right= document.createElement('div');
+    const cb = document.createElement('input'); 
+    cb.type='checkbox'; 
+    cb.dataset.prop=prop;
+    cb.checked = selectionState.get(prop) ?? true; // use global state
+    right.appendChild(cb);
+
+    row.append(left, mid, right);
+    frag.appendChild(row);
+  });
+
+  styleList.innerHTML='';
+  styleList.appendChild(frag);
+}
+
+
+styleSearch.addEventListener('input', ()=>renderStyles(styleSearch.value));
+// helper: coche/décoche + déclenche la préview live
+function setCheckedAndPreview(cb, val) {
+  if (cb.checked !== val) {
+    cb.checked = val;
+    cb.dispatchEvent(new Event('change', { bubbles: true }));
+  }
+}
+
+btnAll.addEventListener('click', (e) => {
+  e.preventDefault();
+  for (const prop of currentRenderedProps) {
+    selectionState.set(prop, true);
+  }
+  styleList.querySelectorAll('input[type=checkbox]').forEach(cb => setCheckedAndPreview(cb, true));
+});
+
+btnNone.addEventListener('click', (e) => {
+  e.preventDefault();
+  for (const prop of currentRenderedProps) {
+    selectionState.set(prop, false);
+  }
+  styleList.querySelectorAll('input[type=checkbox]').forEach(cb => setCheckedAndPreview(cb, false));
+});
+
+btnEss?.addEventListener('click', (e) => {
+  e.preventDefault();
+  styleList.querySelectorAll('input[type=checkbox]').forEach(cb => {
+    const keep = ESSENTIALS.includes(cb.dataset.prop);
+    selectionState.set(cb.dataset.prop, keep);
+    setCheckedAndPreview(cb, keep);
+  });
+});
+
+
+
+// CHANGED: au clic, on ouvre la pop-up et on charge les styles
+captureBtn.addEventListener('click', async () => {
+  if (!hasSelectedElement) { updateStatus(actionStatus, 'Sélectionner un élément d’abord', 'error'); return; }
+
+  // 1) Isoler visuellement tout de suite
+  await ipcRenderer.invoke('apply-background-changes', { isPreview: false });
+
+  // 2) Charger les styles et ouvrir le modal
+  updateStatus(actionStatus, 'Récupération des styles de l’élément…', '');
+  const res = await ipcRenderer.invoke('get-computed-styles');
+  if (!res || !res.success) {
+    updateStatus(actionStatus, '❌ Impossible de lire les styles: ' + (res?.error||'inconnue'), 'error');
+    // si erreur, on retire l’isolement
+    await ipcRenderer.invoke('remove-isolation');
+    return;
+  }
+lastStyles = res.styles.sort((a,b)=>a.prop.localeCompare(b.prop));
+
+if (selectionState.size === 0) {
+  for (const {prop} of lastStyles) selectionState.set(prop, true);
+}
+
+renderStyles();
+openModal();
+  await setPreviewBg('conic-gradient(#ddd 25%, #fff 0 50%, #ddd 0 75%, #fff 0) 0/16px 16px');
+});
+  // 🎯 Gère le clic sur les cases à cocher pour prévisualiser en direct
+styleList.addEventListener('change', async (e) => {
+  const cb = e.target;
+  if (cb && cb.matches('input[type="checkbox"][data-prop]')) {
+    const prop = cb.dataset.prop;
+    const keep = cb.checked;
+    selectionState.set(prop, keep); // update global state
+    await ipcRenderer.invoke('live-toggle-style', { prop, keep });
+  }
+});
+
+
+    async function nudge(dir) {
+      const res = await ipcRenderer.invoke('nudge-selection', dir);
+      if (res && res.success) {
+        updateStatus(selectionStatus, `Élément: ${res.tagName}${res.id ? '#'+res.id : ''} (${res.width}x${res.height})`, 'success');
+        previewBtn.disabled = false; captureBtn.disabled = false; resetBtn.disabled = false;
+        updateStatus(actionStatus, 'Prêt pour la capture haute qualité ! ✨', 'success');
+      } else if (res && res.reason === 'no-target') {
+        updateStatus(selectionStatus, 'Aucun élément dans cette direction.', 'error');
+      }
+    }
+    domParentBtn.addEventListener('click', () => nudge('parent'));
+    domChildBtn.addEventListener('click',  () => nudge('child'));
+    domPrevBtn.addEventListener('click',   () => nudge('prev'));
+    domNextBtn.addEventListener('click',   () => nudge('next'));
+    document.addEventListener('keydown', (e) => {
+      const tag = (e.target && e.target.tagName) || '';
+      if (tag === 'INPUT' || tag === 'TEXTAREA') return;
+      if (e.key === 'ArrowUp')    { e.preventDefault(); nudge('parent'); }
+      if (e.key === 'ArrowDown')  { e.preventDefault(); nudge('child'); }
+      if (e.key === 'ArrowLeft')  { e.preventDefault(); nudge('prev'); }
+      if (e.key === 'ArrowRight') { e.preventDefault(); nudge('next'); }
+      if (e.key === '+')          { e.preventDefault(); nudge('parent'); }
+      if (e.key === '-')          { e.preventDefault(); nudge('child'); }
+    });
+
+    resetBtn.addEventListener('click', async () => {
+      await ipcRenderer.invoke('reset-selection');
+      isSelectionActive = false; hasSelectedElement = false;
+      toggleSelectionBtn.textContent = '▶️ Activer la sélection';
+      toggleSelectionBtn.className = 'success';
+      previewBtn.disabled = true; captureBtn.disabled = true; resetBtn.disabled = true;
+      updateStatus(selectionStatus, 'Prêt à sélectionner des éléments', 'success');
+      updateStatus(actionStatus, 'Sélectionner un élément d’abord', '');
+    });
+  </script>
+</body>
+</html>

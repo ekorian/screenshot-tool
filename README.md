@@ -20,6 +20,8 @@ If you are on a headless Linux server:
 xvfb-run -a npm start
 ```
 
+On some Linux systems you may see a sandbox error from Electron. The provided scripts set `ELECTRON_DISABLE_SANDBOX=1` for development convenience. For production packaging, configure setuid sandbox properly or keep sandbox disabled only in dev.
+
 ### Scripts
 - `start`: run the Electron app
 - `start:headless`: run via Xvfb (Linux headless)

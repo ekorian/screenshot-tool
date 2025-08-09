@@ -3,8 +3,8 @@
   "version": "1.0.0",
   "main": "screenshot-tool.js",
   "scripts": {
-    "start": "electron .",
-    "start:headless": "xvfb-run -a electron .",
+    "start": "ELECTRON_DISABLE_SANDBOX=1 electron .",
+    "start:headless": "xvfb-run -a env ELECTRON_DISABLE_SANDBOX=1 electron .",
     "clean": "rm -rf node_modules dist out release build",
     "package": "electron-builder --dir",
     "dist": "electron-builder"
